@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>deadline清单</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="panel" class="panel">
+
+    <!-- 折叠横幅模式 -->
+    <div id="banner" class="banner" title="点击展开">
+      <span class="banner-icon">📌</span>
+      <div class="banner-text">
+        <div id="bannerName" class="banner-name">deadline清单</div>
+        <div id="bannerCd" class="banner-cd">—</div>
+      </div>
+      <button id="bannerHide" class="icon-btn banner-hide" title="隐藏到托盘">×</button>
+    </div>
+
+    <!-- 完整面板模式 -->
+    <div id="panelMain" class="panel-main">
+      <header class="header">
+        <span class="title">📌 deadline清单</span>
+        <span class="header-btns">
+          <button id="btnCollapse" class="icon-btn" title="折叠成横幅">—</button>
+          <button id="btnHide" class="icon-btn" title="隐藏到托盘（托盘图标可唤回）">×</button>
+        </span>
+      </header>
+
+      <div class="add-form">
+        <input id="inpName" type="text" placeholder="任务名，如：交高数作业" maxlength="60">
+        <div class="form-row">
+          <input id="inpDeadline" type="datetime-local" step="60">
+        </div>
+        <input id="inpNotes" type="text" placeholder="备注（选填）" maxlength="120">
+        <div class="form-btns">
+          <button id="btnSubmit" class="btn primary">添加任务</button>
+          <button id="btnCancel" class="btn" style="display:none">取消编辑</button>
+        </div>
+      </div>
+
+      <div id="taskList" class="task-list"></div>
+
+      <div id="doneSection" class="done-section" style="display:none">
+        <button id="doneToggle" class="done-toggle">
+          <span id="doneCount">0</span> 已完成 <span id="doneArrow" class="arrow">▸</span>
+        </button>
+        <div id="doneList" class="done-list" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="undoBar" class="undo-bar" style="display:none">
+      <span id="undoText"></span>
+      <button id="btnUndo" class="btn small">撤销</button>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

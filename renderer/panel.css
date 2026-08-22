@@ -1,0 +1,294 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: transparent;
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 8px;
+}
+
+/* ---------- 折叠横幅 ---------- */
+
+.banner {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(250, 250, 252, 0.97);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  -webkit-app-region: drag;
+}
+
+body.collapsed .banner { display: flex; }
+body.collapsed .panel-main { display: none; }
+body.collapsed .panel { height: 100vh; }
+
+.banner-icon { font-size: 20px; }
+.banner-text { flex: 1; min-width: 0; }
+.banner-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.banner-cd { color: #c62828; font-weight: 700; font-size: 15px; margin-top: 2px; }
+.banner-hide { -webkit-app-region: no-drag; }
+
+/* ---------- 完整面板 ---------- */
+
+.panel-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
+  background: rgba(250, 250, 252, 0.97);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(230, 81, 71, 0.95);
+  color: #fff;
+  -webkit-app-region: drag;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.header-btns { -webkit-app-region: no-drag; display: flex; gap: 2px; }
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1;
+}
+.icon-btn:hover { background: rgba(0, 0, 0, 0.12); }
+
+/* ---------- 添加表单 ---------- */
+
+.add-form {
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.add-form input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+  outline: none;
+}
+.add-form input:focus { border-color: #e64a47; }
+.add-form input::placeholder { color: #9e9e9e; }
+
+.form-row { display: flex; }
+.form-btns { display: flex; gap: 6px; }
+
+.btn {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #fff;
+  color: #1a1a1a;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.btn:hover { background: rgba(0, 0, 0, 0.05); }
+.btn.primary {
+  background: #e64a47;
+  border-color: #e64a47;
+  color: #fff;
+  font-weight: 600;
+}
+.btn.primary:hover { background: #d43a37; }
+.btn.small { padding: 2px 10px; font-size: 12px; }
+
+/* ---------- 任务列表 ---------- */
+
+.task-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-list::-webkit-scrollbar { width: 5px; }
+.task-list::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); border-radius: 3px; }
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: #fff9c4;
+  transition: background-color 0.6s linear;
+}
+
+.card.flash { animation: flashBorder 1.6s ease-in-out infinite; }
+
+@keyframes flashBorder {
+  0%, 100% { border-color: rgba(255, 255, 255, 0.95); box-shadow: 0 0 8px rgba(230, 74, 71, 0.75); }
+  50% { border-color: rgba(255, 255, 255, 0.25); box-shadow: 0 0 2px rgba(230, 74, 71, 0.3); }
+}
+
+.card-main {
+  flex: 1;
+  min-width: 0;
+  cursor: default;
+}
+
+.card-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.card-cd { font-weight: 700; font-size: 13px; }
+.card-due { white-space: nowrap; }
+
+.card-check {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  cursor: pointer;
+  accent-color: #e64a47;
+}
+
+.card-acts {
+  display: none;
+  gap: 2px;
+  flex: none;
+}
+.card:hover .card-acts { display: flex; }
+
+.card-acts .icon-btn { font-size: 13px; width: 22px; height: 22px; }
+
+.empty {
+  text-align: center;
+  color: #9e9e9e;
+  padding: 28px 0;
+}
+
+/* ---------- 已完成区 ---------- */
+
+.done-section { border-top: 1px solid rgba(0, 0, 0, 0.08); }
+
+.done-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: #616161;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.done-toggle:hover { background: rgba(0, 0, 0, 0.04); }
+.done-toggle span:first-child {
+  background: #e0e0e0;
+  border-radius: 8px;
+  padding: 0 6px;
+  font-weight: 700;
+  color: #424242;
+}
+.arrow { margin-left: auto; transition: transform 0.2s; }
+.done-section.open .arrow { transform: rotate(90deg); }
+
+.done-list {
+  max-height: 110px;
+  overflow-y: auto;
+  padding: 0 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.done-list::-webkit-scrollbar { width: 5px; }
+.done-list::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.18); border-radius: 3px; }
+
+.done-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  color: #757575;
+  font-size: 12px;
+}
+.done-name {
+  flex: 1;
+  min-width: 0;
+  text-decoration: line-through;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.done-when { flex: none; font-size: 11px; color: #9e9e9e; }
+
+/* ---------- 撤销条 ---------- */
+
+.undo-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #263238;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.undo-bar .btn { background: transparent; border-color: rgba(255, 255, 255, 0.5); color: #fff; }
+.undo-bar .btn:hover { background: rgba(255, 255, 255, 0.15); }

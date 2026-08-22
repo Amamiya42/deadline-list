@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>便签</title>
+  <link rel="stylesheet" href="note.css">
+</head>
+<body>
+  <div id="noteCard" class="note-card">
+    <div class="note-top">
+      <div id="nName" class="note-name"></div>
+      <button id="nClose" class="note-close" title="收回主面板">✕</button>
+    </div>
+    <div id="nCd" class="note-cd">—</div>
+    <div id="nNotes" class="note-notes"></div>
+    <label class="note-done" title="标记完成">
+      <input id="nDone" type="checkbox">
+      <span>完成</span>
+    </label>
+  </div>
+
+  <script src="common.js"></script>
+  <script src="note.js"></script>
+</body>
+</html>
