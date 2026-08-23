@@ -22,8 +22,8 @@ async function init() {
 
   window.api.onDataChanged(d => {
     data = d;
-    // 若正在编辑的任务被外部改变/删除，退出编辑态
     if (editId && !data.tasks.find(t => t.id === editId)) resetForm();
+    else if (editId) renderSubtasks(editId);
     render();
   });
   window.api.onViewMode(c => {
@@ -133,6 +133,8 @@ function startEdit(t) {
   $('inpDeadline').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
   $('btnSubmit').textContent = '保存修改';
   $('btnCancel').style.display = '';
+  renderSubtasks(t.id);
+  $('btnAddSubtask').onclick = () => startAddSubtask(t);
   $('inpName').focus();
 }
 
@@ -296,6 +298,51 @@ function startAddSubtask(t) {
     return;
   }
   window.api.addSubtask(t.id, { name: name.trim(), deadline, notes: '' });
+}
+
+function formatDatetimeLocal(ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function renderSubtasks(parentId) {
+  const sec = $('subtaskSection');
+  const list = $('subtaskList');
+  const children = getChildren(data.tasks, parentId).filter(c => !c.done);
+  if (children.length === 0 && !editId) {
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = '';
+  list.innerHTML = '';
+  for (const c of children) list.appendChild(subtaskRow(c));
+}
+
+function subtaskRow(c) {
+  const row = document.createElement('div');
+  row.className = 'subtask-row';
+  const name = document.createElement('input');
+  name.type = 'text';
+  name.value = c.name;
+  name.addEventListener('change', () => window.api.updateTask(c.id, { name: name.value }));
+  const dl = document.createElement('input');
+  dl.type = 'datetime-local';
+  dl.step = '60';
+  dl.value = formatDatetimeLocal(c.deadline);
+  dl.addEventListener('change', () => {
+    const ts = new Date(dl.value).getTime();
+    if (Number.isFinite(ts)) window.api.updateTask(c.id, { deadline: ts });
+  });
+  const del = document.createElement('button');
+  del.className = 'icon-btn';
+  del.textContent = '🗑';
+  del.title = '删除子任务';
+  del.addEventListener('click', () => window.api.deleteTask(c.id));
+  row.appendChild(name);
+  row.appendChild(dl);
+  row.appendChild(del);
+  return row;
 }
 
 function handleCtxAction(action, id) {

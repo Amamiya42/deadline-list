@@ -250,6 +250,43 @@ body.collapsed .panel { height: 100vh; }
 
 .done-section { border-top: 1px solid rgba(0, 0, 0, 0.08); }
 
+/* ---------- 子任务编辑区 ---------- */
+.subtask-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 10px 12px;
+}
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #616161;
+  margin-bottom: 6px;
+}
+.subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.subtask-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+.subtask-row input[type="datetime-local"] {
+  width: 150px;
+  flex: none;
+}
+.subtask-row .icon-btn {
+  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
 .done-toggle {
   width: 100%;
   display: flex;
