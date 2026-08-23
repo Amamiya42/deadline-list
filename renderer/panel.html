@@ -81,6 +81,18 @@
     <button data-action="delete">删除</button>
   </div>
 
+  <div id="subtaskModal" class="modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-title">添加子任务</div>
+      <input id="subtaskName" type="text" placeholder="子任务名" maxlength="500">
+      <input id="subtaskDeadline" type="datetime-local" step="60">
+      <div class="modal-btns">
+        <button id="btnSubtaskOk" class="btn primary">添加</button>
+        <button id="btnSubtaskCancel" class="btn">取消</button>
+      </div>
+    </div>
+  </div>
+
   <script src="common.js"></script>
   <script src="panel.js"></script>
 </body>

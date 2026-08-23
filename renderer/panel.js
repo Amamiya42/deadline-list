@@ -67,8 +67,11 @@ function bindEvents() {
     if (id) await window.api.uncompleteTask(id);
   });
 
-  // 全局点击关闭右键菜单
-  document.addEventListener('click', () => { $('ctxMenu').style.display = 'none'; });
+  // 全局点击关闭右键菜单；点击遮罩关闭子任务弹窗
+  document.addEventListener('click', e => {
+    $('ctxMenu').style.display = 'none';
+    if (e.target.id === 'subtaskModal') closeSubtaskModal();
+  });
   $('ctxMenu').addEventListener('click', e => {
     e.stopPropagation();
     const action = e.target.dataset.action;
@@ -77,6 +80,11 @@ function bindEvents() {
     handleCtxAction(action, t);
     $('ctxMenu').style.display = 'none';
   });
+
+  // 子任务弹窗
+  $('btnSubtaskOk').addEventListener('click', confirmSubtaskModal);
+  $('btnSubtaskCancel').addEventListener('click', closeSubtaskModal);
+  $('subtaskName').addEventListener('keydown', e => { if (e.key === 'Enter') confirmSubtaskModal(); });
 
   // 默认截止时间：明天此时
   const d = new Date(Date.now() + 86400000);
@@ -287,17 +295,36 @@ function doneCard(t) {
   return card;
 }
 
-function startAddSubtask(t) {
-  const name = window.prompt('子任务名：');
-  if (!name || !name.trim()) return;
-  const deadlineStr = window.prompt('截止时间（YYYY-MM-DDTHH:mm）：');
-  if (!deadlineStr) return;
+let pendingSubtaskParent = null;
+
+function openSubtaskModal(parentTask) {
+  pendingSubtaskParent = parentTask;
+  const d = new Date(Date.now() + 86400000);
+  const p = n => String(n).padStart(2, '0');
+  $('subtaskDeadline').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  $('subtaskName').value = '';
+  $('subtaskModal').style.display = 'flex';
+  $('subtaskName').focus();
+}
+
+function closeSubtaskModal() {
+  $('subtaskModal').style.display = 'none';
+  pendingSubtaskParent = null;
+}
+
+function confirmSubtaskModal() {
+  if (!pendingSubtaskParent) return;
+  const name = $('subtaskName').value.trim();
+  const deadlineStr = $('subtaskDeadline').value;
+  if (!name) { alert('请填写子任务名'); return; }
   const deadline = new Date(deadlineStr).getTime();
-  if (!Number.isFinite(deadline)) {
-    alert('时间格式不正确');
-    return;
-  }
-  window.api.addSubtask(t.id, { name: name.trim(), deadline, notes: '' });
+  if (!Number.isFinite(deadline)) { alert('截止时间格式不正确'); return; }
+  window.api.addSubtask(pendingSubtaskParent.id, { name, deadline, notes: '' });
+  closeSubtaskModal();
+}
+
+function startAddSubtask(t) {
+  openSubtaskModal(t);
 }
 
 function formatDatetimeLocal(ts) {
