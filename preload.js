@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   uncompleteTask: id => ipcRenderer.invoke('uncomplete-task', id),
   toggleNote: id => ipcRenderer.invoke('toggle-note', id),
   setCollapsed: v => ipcRenderer.invoke('set-collapsed', v),
+  setBannerHeight: h => ipcRenderer.invoke('set-banner-height', h),
   hidePanel: () => ipcRenderer.invoke('hide-panel'),
   getTaskId: () => new URLSearchParams(window.location.search).get('id'),
   onDataChanged: cb => ipcRenderer.on('data-changed', (_e, d) => cb(d)),

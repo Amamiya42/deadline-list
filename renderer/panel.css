@@ -47,9 +47,10 @@ body.collapsed .panel { height: 100vh; }
 .banner-name {
   font-weight: 600;
   color: #1a1a1a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* 任务名完整显示：允许折行，不截断；窗口高度由渲染层量完内容后动态请求 */
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.3;
 }
 .banner-cd { color: #c62828; font-weight: 700; font-size: 15px; margin-top: 2px; }
 .banner-hide { -webkit-app-region: no-drag; }

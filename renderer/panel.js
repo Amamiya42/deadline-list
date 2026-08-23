@@ -4,6 +4,7 @@ let data = null;
 let editId = null;
 let undoTimer = null;
 let collapsed = false;
+const BANNER_MIN_H = 96; // 与 main.js 的 BANNER_H 保持一致（横幅最小窗口高度）
 
 const $ = id => document.getElementById(id);
 
@@ -254,6 +255,10 @@ function updateBanner() {
     $('bannerName').textContent = t.name;
     $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) + ' · ' + fmtDeadline(t.deadline);
   }
+  // 高度自适应：任务名可能折行多行，量实际内容高度后让主进程调整窗口（下限 BANNER_MIN_H）
+  const textH = document.querySelector('.banner-text').getBoundingClientRect().height;
+  // .banner 上下 padding 8+8，.panel 上下 padding 8+8
+  window.api.setBannerHeight(Math.ceil(textH) + 32);
 }
 
 // ---------- 撤销 ----------

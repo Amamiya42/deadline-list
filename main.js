@@ -595,6 +595,18 @@ function registerIpc() {
     if (panelWin) panelWin.hide();
     return { ok: true };
   });
+
+  // 横幅高度自适应：渲染层量完实际内容后请求调整（任务名折行时窗口跟着变高）
+  ipcMain.handle('set-banner-height', (_e, h) => {
+    if (!data.settings.collapsed) return { ok: false }; // 展开态不允许改
+    if (!panelWin || panelWin.isDestroyed() || !Number.isFinite(h)) return { ok: false };
+    const b = panelWin.getBounds();
+    const wa = screen.getPrimaryDisplay().workArea;
+    const height = Math.max(BANNER_H, Math.min(Math.round(h), wa.height));
+    const y = clamp(b.y, wa.y, wa.y + wa.height - height); // 变高后仍保证完整在屏幕内
+    panelWin.setBounds({ x: b.x, y: y, width: b.width, height: height });
+    return { ok: true };
+  });
 }
 
 // ---------- 生命周期 ----------
