@@ -155,6 +155,11 @@ function loadData() {
     if (!t.completedAt) return true;
     return (now - t.completedAt) < RETENTION_MS;
   });
+  // v1.1 子任务：旧数据缺 parentId/expanded，自动补默认值以保持向后兼容
+  for (const t of d.tasks) {
+    if (t.parentId === undefined) t.parentId = null;
+    if (t.expanded === undefined) t.expanded = true;
+  }
   return d;
 }
 

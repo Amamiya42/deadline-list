@@ -78,3 +78,25 @@ function applyUrgency(el, u) {
   el.classList.toggle('pulse-soft', u.pulse === 'soft');
   el.classList.toggle('pulse-strong', u.pulse === 'strong');
 }
+
+// ---------- 树工具函数（v1.1 子任务） ----------
+
+function getChildren(tasks, id) {
+  return tasks.filter(t => t.parentId === id);
+}
+
+function getRootPath(tasks, id) {
+  const path = [];
+  let cur = tasks.find(t => t.id === id);
+  while (cur) {
+    path.unshift(cur);
+    if (!cur.parentId) break;
+    cur = tasks.find(t => t.id === cur.parentId);
+    if (!cur) break;
+  }
+  return path;
+}
+
+function isLeaf(tasks, id) {
+  return !tasks.some(t => t.parentId === id);
+}
