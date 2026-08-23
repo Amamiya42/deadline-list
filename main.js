@@ -3,6 +3,7 @@
 const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, screen, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const PANEL_W = 340;
 const PANEL_H = 560;
@@ -27,6 +28,34 @@ function logNotify(msg) {
   try {
     fs.appendFileSync(notifyLog, '[' + new Date().toLocaleString('zh-CN') + '] ' + msg + '\n');
   } catch (e) { /* 日志失败不影响主流程 */ }
+}
+
+// ---------- 提示音（自管理） ----------
+// Electron 的 Windows Toast 即使 silent:false 也经常不发声（已知缺陷，与输出设备无关），
+// 所以通知声音完全由我们自己播：用系统 SoundPlayer 播放内置 wav。
+// 它走「当前默认输出设备」——插 USB 耳机自动跟过去，拔掉自动回扬声器，无需任何配置。
+
+let notifySoundFile = null;
+
+function pickNotifySound() {
+  const mediaDir = path.join(process.env.SystemRoot || 'C:\\Windows', 'Media');
+  const candidates = ['Windows Notify System Generic.wav', 'Windows Notify.wav', 'notify.wav'];
+  for (const name of candidates) {
+    const p = path.join(mediaDir, name);
+    if (fs.existsSync(p)) { notifySoundFile = p; return; }
+  }
+}
+
+function playNotifySound() {
+  if (!notifySoundFile) return;
+  try {
+    const arg = '(New-Object Media.SoundPlayer \'' + notifySoundFile.replace(/'/g, "''") + '\').PlaySync()';
+    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', arg], {
+      windowsHide: true,
+      stdio: 'ignore'
+    });
+    child.on('error', () => {}); // 播放失败不影响通知本身
+  } catch (e) { /* 同上 */ }
 }
 
 // ---------- 通知快捷方式（关键修复） ----------
@@ -273,7 +302,7 @@ function fireNotification(task, node) {
 // 否则 Windows 会把 Toast 静默丢弃——这正是 v1.0.2 通知消失的根因。
 function showTrayBalloon(title, body) {
   if (!tray || tray.isDestroyed()) return;
-  const opts = { title: title, content: body };
+  const opts = { title: title, content: body, noSound: true }; // 声音走 playNotifySound()
   if (trayIcon && !trayIcon.isEmpty()) opts.icon = trayIcon;
   tray.displayBalloon(opts);
   tray.once('balloon-click', () => {
@@ -286,13 +315,14 @@ function showTrayBalloon(title, body) {
 }
 
 function showBalloon(title, body) {
+  playNotifySound(); // 声音由我们自己保证，Toast/气泡一律静音，避免双重响或不响
   let toastSent = false;
   if (Notification.isSupported()) {
     try {
       const n = new Notification({
         title: title,
         body: body,
-        silent: false, // 带系统提示音
+        silent: true, // 声音走 playNotifySound()，这里静音
         timeoutType: 'default'
       });
       n.on('click', () => {
@@ -545,6 +575,7 @@ if (!gotLock) {
 
     // 通知链路修复：补建带 AUMID 的开始菜单快捷方式（Windows 显示 Toast 的硬性前提）
     ensureNotificationShortcut();
+    pickNotifySound();
 
     // 首次运行加一条演示任务，让紧迫感配色立刻可见
     if (!data.settings.demoAdded && data.tasks.length === 0) {
