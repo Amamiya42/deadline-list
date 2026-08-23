@@ -386,8 +386,17 @@ function updateBanner() {
     $('bannerLabel').style.display = '';
     const t = undone[0];
     const rem = t.deadline - Date.now();
-    $('bannerName').textContent = t.name;
-    $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) + ' · ' + fmtDeadline(t.deadline);
+    const path = getRootPath(data.tasks, t.id);
+    if (path.length > 1) {
+      const root = path[0];
+      $('bannerName').textContent = root.name + ' > ' + t.name;
+      $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) +
+        ' · 子截止 ' + fmtDeadline(t.deadline) +
+        ' · 根截止 ' + fmtDeadline(root.deadline);
+    } else {
+      $('bannerName').textContent = t.name;
+      $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) + ' · ' + fmtDeadline(t.deadline);
+    }
   }
   // 高度自适应：任务名可能折行多行。
   // 注意：不能用 .banner-text 的 getBoundingClientRect()，它会被当前窗口的 overflow 裁剪，
