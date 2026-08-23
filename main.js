@@ -615,6 +615,61 @@ function registerIpc() {
     logNotify('[横幅高度] 应用 height=' + height + ' (请求=' + Math.round(h) + ', 工作区=' + wa.height + '), y=' + y);
     return { ok: true };
   });
+
+  // ---------- v1.1 子任务 IPC ----------
+
+  ipcMain.handle('add-subtask', (_e, parentId, t) => {
+    const parent = getTask(parentId);
+    if (!parent) return { ok: false, error: '父任务不存在' };
+    if (!t || typeof t.name !== 'string' || !t.name.trim() || !Number.isFinite(t.deadline)) {
+      return { ok: false, error: '参数不完整' };
+    }
+    const child = {
+      id: uid(),
+      name: t.name.trim(),
+      deadline: t.deadline,
+      notes: typeof t.notes === 'string' ? t.notes : '',
+      done: false,
+      completedAt: null,
+      notified: {},
+      note: null,
+      parentId: parentId,
+      expanded: true
+    };
+    data.tasks.push(child);
+    saveData();
+    broadcast();
+    return { ok: true, id: child.id };
+  });
+
+  ipcMain.handle('update-subtask-parent', (_e, id, newParentId) => {
+    const t = getTask(id);
+    if (!t) return { ok: false, error: '任务不存在' };
+    if (newParentId !== null) {
+      const p = getTask(newParentId);
+      if (!p) return { ok: false, error: '新父任务不存在' };
+      let cur = p;
+      while (cur) {
+        if (cur.id === id) return { ok: false, error: '不能移动到自身或后代下' };
+        if (!cur.parentId) break;
+        cur = data.tasks.find(x => x.id === cur.parentId);
+        if (!cur) break;
+      }
+    }
+    t.parentId = newParentId;
+    saveData();
+    broadcast();
+    return { ok: true };
+  });
+
+  ipcMain.handle('toggle-expanded', (_e, id) => {
+    const t = getTask(id);
+    if (!t) return { ok: false, error: '任务不存在' };
+    t.expanded = !t.expanded;
+    saveData();
+    broadcast();
+    return { ok: true };
+  });
 }
 
 // ---------- 生命周期 ----------
