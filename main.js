@@ -643,8 +643,6 @@ function registerIpc() {
 
   // 横幅高度自适应：渲染层量完实际内容后请求调整（任务名折行时窗口跟着变高）
   ipcMain.handle('set-banner-height', (_e, h) => {
-    logNotify('[横幅高度] 收到请求 h=' + h + ', collapsed=' + data.settings.collapsed +
-      ', win=' + (panelWin && !panelWin.isDestroyed() ? 'ok' : 'null'));
     if (!data.settings.collapsed) return { ok: false }; // 展开态不允许改
     if (!panelWin || panelWin.isDestroyed() || !Number.isFinite(h)) return { ok: false };
     const b = panelWin.getBounds();
@@ -652,7 +650,6 @@ function registerIpc() {
     const height = Math.max(BANNER_H, Math.min(Math.round(h), wa.height));
     const y = clamp(b.y, wa.y, wa.y + wa.height - height); // 变高后仍保证完整在屏幕内
     panelWin.setBounds({ x: b.x, y: y, width: b.width, height: height });
-    logNotify('[横幅高度] 应用 height=' + height + ' (请求=' + Math.round(h) + ', 工作区=' + wa.height + '), y=' + y);
     return { ok: true };
   });
 
