@@ -38,7 +38,18 @@ function logNotify(msg) {
 const BEEP_SCRIPT = `
 (async () => {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const st0 = ctx.state;
+    if (st0 !== 'running') {
+      try { await ctx.resume(); } catch (e) {}
+    }
+    const st1 = ctx.state;
+    if (st1 !== 'running') {
+      try { await ctx.close(); } catch (e) {}
+      // 挂起状态下调度音符会"成功"但一声不响，必须显式区分
+      return 'beep-blocked: initial=' + st0 + ', after-resume=' + st1;
+    }
     const t0 = ctx.currentTime + 0.05;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.0001, t0);
@@ -54,7 +65,7 @@ const BEEP_SCRIPT = `
       osc.start(t0 + dt);
       osc.stop(t0 + dt + dur);
     });
-    return 'beep-ok';
+    return 'beep-ok state=' + st1;
   } catch (e) {
     return 'beep-error: ' + (e && e.message);
   }
