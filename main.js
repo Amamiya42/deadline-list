@@ -497,6 +497,38 @@ function createTray() {
   });
 }
 
+// ---------- 子任务完成联动辅助函数 ----------
+
+function markDone(id) {
+  const t = getTask(id);
+  if (!t || t.done) return;
+  t.done = true;
+  t.completedAt = Date.now();
+  if (t.note) t.note.detached = false;
+  closeNoteWin(id);
+  for (const child of data.tasks) {
+    if (child.parentId === id) markDone(child.id);
+  }
+}
+
+function propagateCompletion() {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const t of data.tasks) {
+      if (t.done) continue;
+      const children = data.tasks.filter(c => c.parentId === t.id);
+      if (children.length > 0 && children.every(c => c.done)) {
+        t.done = true;
+        t.completedAt = Date.now();
+        if (t.note) t.note.detached = false;
+        closeNoteWin(t.id);
+        changed = true;
+      }
+    }
+  }
+}
+
 // ---------- IPC ----------
 
 function registerIpc() {
@@ -548,10 +580,8 @@ function registerIpc() {
   ipcMain.handle('complete-task', (_e, id) => {
     const t = getTask(id);
     if (!t) return { ok: false, error: '任务不存在' };
-    t.done = true;
-    t.completedAt = Date.now();
-    if (t.note) t.note.detached = false;
-    closeNoteWin(id);
+    markDone(id);
+    propagateCompletion();
     saveData();
     broadcast();
     return { ok: true };
