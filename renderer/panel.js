@@ -67,6 +67,17 @@ function bindEvents() {
     if (id) await window.api.uncompleteTask(id);
   });
 
+  // 全局点击关闭右键菜单
+  document.addEventListener('click', () => { $('ctxMenu').style.display = 'none'; });
+  $('ctxMenu').addEventListener('click', e => {
+    e.stopPropagation();
+    const action = e.target.dataset.action;
+    const t = $('ctxMenu').dataset.targetId;
+    if (!t) return;
+    handleCtxAction(action, t);
+    $('ctxMenu').style.display = 'none';
+  });
+
   // 默认截止时间：明天此时
   const d = new Date(Date.now() + 86400000);
   const p = n => String(n).padStart(2, '0');
@@ -217,6 +228,12 @@ function taskCard(t, depth = 0) {
   pin.textContent = (t.note && t.note.detached) ? '📌' : '📍';
   pin.addEventListener('click', () => window.api.toggleNote(t.id));
 
+  const addChild = document.createElement('button');
+  addChild.className = 'icon-btn';
+  addChild.title = '添加子任务';
+  addChild.textContent = '+';
+  addChild.addEventListener('click', () => startAddSubtask(t));
+
   const del = document.createElement('button');
   del.className = 'icon-btn';
   del.title = '删除任务';
@@ -228,11 +245,23 @@ function taskCard(t, depth = 0) {
   });
 
   acts.appendChild(pin);
+  acts.appendChild(addChild);
   acts.appendChild(del);
 
   card.appendChild(check);
   card.appendChild(main);
   card.appendChild(acts);
+
+  // 右键菜单
+  card.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const menu = $('ctxMenu');
+    menu.dataset.targetId = t.id;
+    menu.style.display = 'flex';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+  });
+
   return card;
 }
 
@@ -254,6 +283,35 @@ function doneCard(t) {
   card.appendChild(when);
   card.appendChild(restore);
   return card;
+}
+
+function startAddSubtask(t) {
+  const name = window.prompt('子任务名：');
+  if (!name || !name.trim()) return;
+  const deadlineStr = window.prompt('截止时间（YYYY-MM-DDTHH:mm）：');
+  if (!deadlineStr) return;
+  const deadline = new Date(deadlineStr).getTime();
+  if (!Number.isFinite(deadline)) {
+    alert('时间格式不正确');
+    return;
+  }
+  window.api.addSubtask(t.id, { name: name.trim(), deadline, notes: '' });
+}
+
+function handleCtxAction(action, id) {
+  const t = data.tasks.find(x => x.id === id);
+  if (!t) return;
+  switch (action) {
+    case 'add-sub': startAddSubtask(t); break;
+    case 'edit': startEdit(t); break;
+    case 'toggle-note': window.api.toggleNote(id); break;
+    case 'complete': window.api.completeTask(id); break;
+    case 'delete':
+      if (confirm('删除任务「' + t.name + '」？\n此操作不可恢复。')) {
+        window.api.deleteTask(id);
+      }
+      break;
+  }
 }
 
 // ---------- 每秒刷新 ----------

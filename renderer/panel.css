@@ -325,6 +325,31 @@ body.collapsed .panel { height: 100vh; }
 .undo-bar .btn { background: transparent; border-color: rgba(255, 255, 255, 0.5); color: #fff; }
 .undo-bar .btn:hover { background: rgba(255, 255, 255, 0.15); }
 
+/* ---------- 右键菜单 ---------- */
+.ctx-menu {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(250, 250, 252, 0.98);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+.ctx-menu button {
+  border: none;
+  background: transparent;
+  color: #1a1a1a;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ctx-menu button:hover { background: rgba(0, 0, 0, 0.06); }
+.ctx-menu button[data-action="delete"] { color: #c62828; }
+
 /* ---------- 快捷键提示条 ---------- */
 
 .hint-bar {
