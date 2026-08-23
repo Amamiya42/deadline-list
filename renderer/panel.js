@@ -52,6 +52,7 @@ function bindEvents() {
   $('btnSubmit').addEventListener('click', submitTask);
   $('btnCancel').addEventListener('click', resetForm);
   $('inpName').addEventListener('keydown', e => { if (e.key === 'Enter') submitTask(); });
+  $('inpName').addEventListener('input', updateNameCounter);
 
   $('doneToggle').addEventListener('click', () => {
     const sec = $('doneSection');
@@ -80,6 +81,14 @@ function resetForm() {
   $('inpNotes').value = '';
   $('btnSubmit').textContent = '添加任务';
   $('btnCancel').style.display = 'none';
+  updateNameCounter();
+}
+
+function updateNameCounter() {
+  const len = $('inpName').value.length;
+  const remaining = 500 - len;
+  $('nameCounter').textContent = '剩余 ' + remaining + ' 字';
+  $('nameCounter').classList.toggle('limit', remaining <= 0);
 }
 
 async function submitTask() {
@@ -107,6 +116,7 @@ function startEdit(t) {
   editId = t.id;
   $('inpName').value = t.name;
   $('inpNotes').value = t.notes || '';
+  updateNameCounter();
   const d = new Date(t.deadline);
   const p = n => String(n).padStart(2, '0');
   $('inpDeadline').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());

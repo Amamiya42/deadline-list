@@ -120,6 +120,21 @@ body.collapsed .panel { height: 100vh; }
 .add-form input::placeholder { color: #9e9e9e; }
 
 .form-row { display: flex; }
+.input-wrap { position: relative; }
+.input-wrap input { padding-right: 64px; }
+.name-counter {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #9e9e9e;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.name-counter.limit { color: #e64a47; font-weight: 600; }
 .form-btns { display: flex; gap: 6px; }
 
 .btn {
