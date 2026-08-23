@@ -5,12 +5,21 @@ html, body {
   font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   overflow: hidden;
   user-select: none;
+  height: 100%;
+}
+
+/* 用 body 内边距留出阴影空间。
+   之前的写法是 .note-card { height: 100vh; margin: 8px; }，
+   高度 100vh + 上下 margin 共 16px 超出窗口，导致底部被裁掉、圆角不完整 */
+body {
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .note-card {
-  height: 100vh;
-  margin: 8px;
-  border-radius: 10px;
+  height: 100%;
+  margin: 0;
+  border-radius: 12px;
   border: 2px solid transparent;
   background: #fff9c4;
   color: #1a1a1a;

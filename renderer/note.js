@@ -27,7 +27,7 @@ function tick() {
   if (!task) return;
   const rem = task.deadline - Date.now();
   const cd = document.getElementById('nCd');
-  cd.textContent = fmtRemaining(rem);
+  cd.textContent = fmtRemaining(rem) + exclamations(rem);
   const u = urgency(rem);
   cd.style.fontSize = u.fontPx + 'px';
   applyUrgency(document.getElementById('noteCard'), u);

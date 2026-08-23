@@ -39,6 +39,9 @@ function applyViewMode() {
 function bindEvents() {
   $('btnCollapse').addEventListener('click', () => window.api.setCollapsed(true));
   $('btnHide').addEventListener('click', () => window.api.hidePanel());
+  // 注意：横幅本体是拖动区域（-webkit-app-region: drag），拖动区域收不到 click 事件，
+  // 所以展开必须走这个独立按钮（no-drag）
+  $('bannerExpand').addEventListener('click', () => window.api.setCollapsed(false));
   $('banner').addEventListener('click', e => {
     if (e.target.closest('.banner-hide')) return;
     window.api.setCollapsed(false);
@@ -165,7 +168,7 @@ function taskCard(t) {
   meta.className = 'card-meta';
   const cd = document.createElement('span');
   cd.className = 'card-cd';
-  cd.textContent = fmtRemaining(t.deadline - Date.now());
+  cd.textContent = fmtRemaining(t.deadline - Date.now()) + exclamations(t.deadline - Date.now());
   const due = document.createElement('span');
   due.className = 'card-due';
   due.textContent = '截止 ' + fmtDeadline(t.deadline);
@@ -232,7 +235,7 @@ function tick() {
     if (!t || t.done) return;
     const rem = t.deadline - now;
     const cdEl = card.querySelector('.card-cd');
-    if (cdEl) cdEl.textContent = fmtRemaining(rem);
+    if (cdEl) cdEl.textContent = fmtRemaining(rem) + exclamations(rem);
     applyUrgency(card, urgency(rem));
   });
   if (collapsed) updateBanner();
@@ -242,11 +245,12 @@ function updateBanner() {
   const undone = data.tasks.filter(t => !t.done).sort((a, b) => a.deadline - b.deadline);
   if (undone.length === 0) {
     $('bannerName').textContent = '没有待办任务 🎉';
-    $('bannerCd').textContent = '点击展开添加';
+    $('bannerCd').textContent = '点 ⤢ 展开添加';
   } else {
     const t = undone[0];
+    const rem = t.deadline - Date.now();
     $('bannerName').textContent = t.name;
-    $('bannerCd').textContent = fmtRemaining(t.deadline - Date.now()) + ' · ' + fmtDeadline(t.deadline);
+    $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) + ' · ' + fmtDeadline(t.deadline);
   }
 }
 

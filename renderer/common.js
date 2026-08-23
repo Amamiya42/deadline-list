@@ -23,6 +23,16 @@ function fmtDeadline(ts) {
   return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
+// 感叹号强调：5~7天 → ！；3~5天 → ！！；1~3天与<24h → ！！！；>7天和已过期 → 无
+function exclamations(remainingMs) {
+  const DAY = 86400000;
+  if (remainingMs <= 0) return '';
+  if (remainingMs > 7 * DAY) return '';
+  if (remainingMs > 5 * DAY) return '！';
+  if (remainingMs > 3 * DAY) return '！！';
+  return '！！！';
+}
+
 // 紧迫度：颜色连续渐变 淡黄(>7天)→橙黄(5~7天)→橙红(3~5天)→正红(1~3天)→深红(<24h)→黑(过期)
 function urgency(remainingMs) {
   const DAY = 86400000;

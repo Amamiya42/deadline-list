@@ -10,12 +10,13 @@
   <div id="panel" class="panel">
 
     <!-- 折叠横幅模式 -->
-    <div id="banner" class="banner" title="点击展开">
+    <div id="banner" class="banner" title="拖动移动位置，点 ⤢ 展开面板">
       <span class="banner-icon">📌</span>
       <div class="banner-text">
         <div id="bannerName" class="banner-name">deadline清单</div>
         <div id="bannerCd" class="banner-cd">—</div>
       </div>
+      <button id="bannerExpand" class="icon-btn banner-hide banner-expand" title="展开面板">⤢</button>
       <button id="bannerHide" class="icon-btn banner-hide" title="隐藏到托盘">×</button>
     </div>
 
@@ -49,6 +50,11 @@
         </button>
         <div id="doneList" class="done-list" style="display:none"></div>
       </div>
+
+      <footer class="hint-bar" title="专注模式：一键隐藏/恢复全部悬浮窗（托盘菜单也可切换）">
+        <span class="hint-key">Ctrl</span>+<span class="hint-key">Alt</span>+<span class="hint-key">H</span>
+        <span class="hint-text">专注模式 · 一键隐藏/恢复全部悬浮窗</span>
+      </footer>
     </div>
 
     <div id="undoBar" class="undo-bar" style="display:none">

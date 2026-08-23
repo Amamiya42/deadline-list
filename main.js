@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, screen, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -8,7 +8,7 @@ const PANEL_W = 340;
 const PANEL_H = 560;
 const BANNER_H = 64;
 const NOTE_W = 250;
-const NOTE_H = 175;
+const NOTE_H = 190;
 const RETENTION_MS = 30 * 24 * 3600 * 1000; // 已完成任务保留 30 天
 
 app.setAppUserModelId('com.yifan.deadlinelist');
@@ -21,10 +21,47 @@ app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('no-sandbox');
 
 const dataFile = path.join(app.getPath('userData'), 'data.json');
+const notifyLog = path.join(app.getPath('userData'), 'notify.log');
+
+function logNotify(msg) {
+  try {
+    fs.appendFileSync(notifyLog, '[' + new Date().toLocaleString('zh-CN') + '] ' + msg + '\n');
+  } catch (e) { /* 日志失败不影响主流程 */ }
+}
+
+// ---------- 通知快捷方式（关键修复） ----------
+// Windows 只为「带 AUMID 的开始菜单快捷方式」展示 Toast。
+// 未打包的 Electron 应用裸跑 electron.exe 时没有这个快捷方式，
+// 系统会把 Toast 静默丢弃（不报错、不显示、不进通知中心）。
+// 这里在启动时自动补建一个带 AUMID 的快捷方式，一次到位。
+function ensureNotificationShortcut() {
+  try {
+    const startMenu = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs');
+    const lnk = path.join(startMenu, 'deadline清单.lnk');
+    // 已存在且指向同一 electron.exe 就不再重写（避免每次启动都刷新）
+    let need = true;
+    try {
+      const cur = shell.readShortcutLink(lnk);
+      if (cur && cur.target === process.execPath) need = false;
+    } catch (e) { /* 不存在或读取失败 → 需要创建 */ }
+    if (need) {
+      shell.writeShortcutLink(lnk, 'replace', {
+        target: process.execPath,
+        args: '"' + __dirname + '"',
+        appUserModelId: 'com.yifan.deadlinelist',
+        description: 'deadline清单 桌面提醒'
+      });
+      logNotify('已创建开始菜单快捷方式（AUMID=com.yifan.deadlinelist）→ ' + lnk);
+    }
+  } catch (e) {
+    logNotify('快捷方式创建失败: ' + (e && e.message));
+  }
+}
 
 let data = null;
 let panelWin = null;
 let tray = null;
+let trayIcon = null;
 let quitting = false;
 const noteWins = new Map(); // taskId -> BrowserWindow
 
@@ -52,7 +89,7 @@ function loadData() {
   if (!d || typeof d !== 'object') d = {};
   if (!Array.isArray(d.tasks)) d.tasks = [];
   d.settings = Object.assign(
-    { panelX: null, panelY: null, collapsed: false, autoLaunch: true, demoAdded: false },
+    { panelX: null, panelY: null, collapsed: false, autoLaunch: true, demoAdded: false, focusMode: false },
     d.settings || {}
   );
   // 清理超过保留期的已完成任务
@@ -110,7 +147,10 @@ function createPanel() {
   });
   panelWin.setAlwaysOnTop(true, 'screen-saver');
   panelWin.loadFile(path.join(__dirname, 'renderer', 'panel.html'));
-  panelWin.once('ready-to-show', () => panelWin.show());
+  // 专注模式下启动时不显示面板
+  panelWin.once('ready-to-show', () => {
+    if (!data.settings.focusMode) panelWin.show();
+  });
   panelWin.on('moved', savePanelPos);
   panelWin.on('close', e => {
     if (!quitting) {
@@ -160,7 +200,9 @@ function createNoteWin(task) {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadFile(path.join(__dirname, 'renderer', 'note.html'), { query: { id: task.id } });
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => {
+    if (!data.settings.focusMode) win.show();
+  });
   win.on('moved', () => {
     const t = getTask(task.id);
     if (t) {
@@ -221,19 +263,55 @@ const NODES = [
 ];
 
 function fireNotification(task, node) {
-  if (!Notification.isSupported()) return;
-  const n = new Notification({
-    title: '⏰ deadline清单：' + node.label,
-    body: task.name,
-    silent: false
-  });
-  n.on('click', () => {
-    if (panelWin && !panelWin.isDestroyed()) {
-      panelWin.show();
-      panelWin.focus();
+  const title = '⏰ deadline清单：' + node.label;
+  const body = task.name;
+  showBalloon(title, body);
+}
+
+// Windows 通知：Notification API 为主，托盘气泡兜底。
+// 前提：必须存在「带 AUMID 的开始菜单快捷方式」（见 ensureNotificationShortcut），
+// 否则 Windows 会把 Toast 静默丢弃——这正是 v1.0.2 通知消失的根因。
+function showBalloon(title, body) {
+  if (Notification.isSupported()) {
+    try {
+      const n = new Notification({
+        title: title,
+        body: body,
+        silent: false, // 带系统提示音
+        timeoutType: 'default'
+      });
+      n.on('click', () => {
+        if (panelWin && !panelWin.isDestroyed()) {
+          panelWin.show();
+          panelWin.focus();
+        }
+      });
+      n.on('failed', () => logNotify('Notification API 报告 failed：' + title));
+      n.show();
+      logNotify('[Notification API] 已发送：' + title);
+      return;
+    } catch (e) {
+      logNotify('Notification API 异常，转托盘气泡：' + (e && e.message));
     }
-  });
-  n.show();
+  } else {
+    logNotify('Notification API 不可用，转托盘气泡');
+  }
+  if (tray && !tray.isDestroyed()) {
+    const opts = { title: title, content: body };
+    if (trayIcon && !trayIcon.isEmpty()) opts.icon = trayIcon;
+    tray.displayBalloon(opts);
+    tray.once('balloon-click', () => {
+      if (panelWin && !panelWin.isDestroyed()) {
+        panelWin.show();
+        panelWin.focus();
+      }
+    });
+    logNotify('[托盘气泡] 已发送：' + title);
+  }
+}
+
+function sendTestNotification() {
+  showBalloon('✅ deadline清单：测试通知', '看到这条并听到提示音，说明通知链路正常。');
 }
 
 function checkReminders() {
@@ -265,18 +343,48 @@ function applyAutoLaunch() {
   }
 }
 
-function createTray() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.png');
-  let img;
-  try {
-    img = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  } catch (e) {
-    img = nativeImage.createEmpty();
+// ---------- 专注模式（玩游戏/演示时隐藏全部悬浮窗，Ctrl+Alt+H 切换） ----------
+
+function applyFocusMode() {
+  const on = !!data.settings.focusMode;
+  if (panelWin && !panelWin.isDestroyed()) {
+    if (on) panelWin.hide();
+    else panelWin.show();
   }
-  tray = new Tray(img);
-  tray.setToolTip('deadline清单');
+  for (const [id, win] of noteWins) {
+    if (win.isDestroyed()) { noteWins.delete(id); continue; }
+    if (on) {
+      win.hide();
+    } else {
+      const t = getTask(id);
+      if (t && !t.done && t.note && t.note.detached) win.show();
+      else { win.destroy(); noteWins.delete(id); }
+    }
+  }
+  if (!on) {
+    // 恢复期间补建缺失的便签窗口（位置由 task.note.x/y 记忆）
+    for (const t of data.tasks) {
+      if (!t.done && t.note && t.note.detached && !noteWins.has(t.id)) createNoteWin(t);
+    }
+  }
+}
+
+function toggleFocusMode() {
+  data.settings.focusMode = !data.settings.focusMode;
+  saveData();
+  applyFocusMode();
+  if (tray && !tray.isDestroyed()) buildTrayMenu();
+}
+
+function buildTrayMenu() {
   const menu = Menu.buildFromTemplate([
     { label: '显示主面板', click: () => { if (panelWin) { panelWin.show(); panelWin.focus(); } } },
+    { label: '发送测试通知', click: () => sendTestNotification() },
+    { label: '专注模式：隐藏全部悬浮窗 (Ctrl+Alt+H)', type: 'checkbox', checked: !!data.settings.focusMode, click: item => {
+      data.settings.focusMode = item.checked;
+      saveData();
+      applyFocusMode();
+    } },
     { label: '开机自启', type: 'checkbox', checked: !!data.settings.autoLaunch, click: item => {
       data.settings.autoLaunch = item.checked;
       applyAutoLaunch();
@@ -286,6 +394,20 @@ function createTray() {
     { label: '退出', click: () => { quitting = true; app.quit(); } }
   ]);
   tray.setContextMenu(menu);
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, 'assets', 'icon.png');
+  let img;
+  try {
+    img = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } catch (e) {
+    img = nativeImage.createEmpty();
+  }
+  trayIcon = img;
+  tray = new Tray(img);
+  tray.setToolTip('deadline清单');
+  buildTrayMenu();
   tray.on('click', () => {
     if (panelWin) { panelWin.show(); panelWin.focus(); }
   });
@@ -412,6 +534,9 @@ if (!gotLock) {
   app.whenReady().then(() => {
     data = loadData();
 
+    // 通知链路修复：补建带 AUMID 的开始菜单快捷方式（Windows 显示 Toast 的硬性前提）
+    ensureNotificationShortcut();
+
     // 首次运行加一条演示任务，让紧迫感配色立刻可见
     if (!data.settings.demoAdded && data.tasks.length === 0) {
       data.settings.demoAdded = true;
@@ -433,10 +558,28 @@ if (!gotLock) {
     for (const t of data.tasks) {
       if (!t.done && t.note && t.note.detached) createNoteWin(t);
     }
+    if (data.settings.focusMode) applyFocusMode();
     createTray();
     registerIpc();
+
+    // 全局快捷键：Ctrl+Alt+H 一键隐藏/恢复全部悬浮窗（游戏时用）
+    try {
+      globalShortcut.register('Control+Alt+H', () => toggleFocusMode());
+    } catch (e) {
+      console.error('注册全局快捷键失败:', e);
+    }
+
     setInterval(checkReminders, 30 * 1000);
     setTimeout(checkReminders, 3000);
+
+    // 调试入口：electron . --test-notify 启动 5 秒后自动发一条测试通知
+    if (process.argv.includes('--test-notify')) {
+      setTimeout(sendTestNotification, 5000);
+    }
+  });
+
+  app.on('will-quit', () => {
+    try { globalShortcut.unregisterAll(); } catch (e) { /* 忽略 */ }
   });
 
   app.on('before-quit', () => {
