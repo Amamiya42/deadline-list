@@ -271,7 +271,22 @@ function fireNotification(task, node) {
 // Windows 通知：Notification API 为主，托盘气泡兜底。
 // 前提：必须存在「带 AUMID 的开始菜单快捷方式」（见 ensureNotificationShortcut），
 // 否则 Windows 会把 Toast 静默丢弃——这正是 v1.0.2 通知消失的根因。
+function showTrayBalloon(title, body) {
+  if (!tray || tray.isDestroyed()) return;
+  const opts = { title: title, content: body };
+  if (trayIcon && !trayIcon.isEmpty()) opts.icon = trayIcon;
+  tray.displayBalloon(opts);
+  tray.once('balloon-click', () => {
+    if (panelWin && !panelWin.isDestroyed()) {
+      panelWin.show();
+      panelWin.focus();
+    }
+  });
+  logNotify('[托盘气泡] 已发送：' + title);
+}
+
 function showBalloon(title, body) {
+  let toastSent = false;
   if (Notification.isSupported()) {
     try {
       const n = new Notification({
@@ -286,28 +301,22 @@ function showBalloon(title, body) {
           panelWin.focus();
         }
       });
-      n.on('failed', () => logNotify('Notification API 报告 failed：' + title));
+      // 关键：failed 是异步事件——n.show() 本身不抛错，Toast 被系统静默丢弃时只会走到这里。
+      // 之前在这里只记日志就结束，导致 Toast 失败后连托盘气泡兜底都没有（v1.0.2 通知消失的残留根因）。
+      n.on('failed', err => {
+        logNotify('Notification API 报告 failed，转托盘气泡：' + title + (err ? ' (' + err + ')' : ''));
+        showTrayBalloon(title, body);
+      });
       n.show();
+      toastSent = true;
       logNotify('[Notification API] 已发送：' + title);
-      return;
     } catch (e) {
-      logNotify('Notification API 异常，转托盘气泡：' + (e && e.message));
+      logNotify('Notification API 同步异常，转托盘气泡：' + (e && e.message));
     }
   } else {
     logNotify('Notification API 不可用，转托盘气泡');
   }
-  if (tray && !tray.isDestroyed()) {
-    const opts = { title: title, content: body };
-    if (trayIcon && !trayIcon.isEmpty()) opts.icon = trayIcon;
-    tray.displayBalloon(opts);
-    tray.once('balloon-click', () => {
-      if (panelWin && !panelWin.isDestroyed()) {
-        panelWin.show();
-        panelWin.focus();
-      }
-    });
-    logNotify('[托盘气泡] 已发送：' + title);
-  }
+  if (!toastSent) showTrayBalloon(title, body);
 }
 
 function sendTestNotification() {
