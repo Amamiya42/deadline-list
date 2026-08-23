@@ -401,6 +401,7 @@ function checkReminders() {
   if (!data) return;
   const now = Date.now();
   let changed = false;
+  // v1.1：子任务也是独立节点，data.tasks 已扁平包含所有节点，天然遍历根+子任务
   for (const t of data.tasks) {
     if (t.done) continue;
     const diff = t.deadline - now;
