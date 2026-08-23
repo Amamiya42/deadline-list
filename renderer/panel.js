@@ -244,9 +244,11 @@ function tick() {
 function updateBanner() {
   const undone = data.tasks.filter(t => !t.done).sort((a, b) => a.deadline - b.deadline);
   if (undone.length === 0) {
+    $('bannerLabel').style.display = 'none';
     $('bannerName').textContent = '没有待办任务 🎉';
     $('bannerCd').textContent = '点 ⤢ 展开添加';
   } else {
+    $('bannerLabel').style.display = '';
     const t = undone[0];
     const rem = t.deadline - Date.now();
     $('bannerName').textContent = t.name;

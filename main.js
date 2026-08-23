@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const PANEL_W = 340;
 const PANEL_H = 560;
-const BANNER_H = 84; // 横幅内容约 55px + .panel 上下 padding 16px + 阴影余量；64 会裁掉底部圆角
+const BANNER_H = 96; // 三行内容(标签+任务名+倒计时)约 70px + .panel 上下 padding 16px + 阴影余量；不足会裁掉底部圆角
 const NOTE_W = 250;
 const NOTE_H = 190;
 const RETENTION_MS = 30 * 24 * 3600 * 1000; // 已完成任务保留 30 天
