@@ -529,6 +529,16 @@ function propagateCompletion() {
   }
 }
 
+function deleteTaskRecursively(id) {
+  const children = data.tasks.filter(t => t.parentId === id);
+  for (const c of children) deleteTaskRecursively(c.id);
+  const i = data.tasks.findIndex(t => t.id === id);
+  if (i >= 0) {
+    closeNoteWin(id);
+    data.tasks.splice(i, 1);
+  }
+}
+
 // ---------- IPC ----------
 
 function registerIpc() {
@@ -568,10 +578,9 @@ function registerIpc() {
   });
 
   ipcMain.handle('delete-task', (_e, id) => {
-    const i = data.tasks.findIndex(t => t.id === id);
-    if (i < 0) return { ok: false, error: '任务不存在' };
-    data.tasks.splice(i, 1);
-    closeNoteWin(id);
+    const t = getTask(id);
+    if (!t) return { ok: false, error: '任务不存在' };
+    deleteTaskRecursively(id);
     saveData();
     broadcast();
     return { ok: true };
