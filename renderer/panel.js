@@ -261,8 +261,8 @@ function updateBanner() {
   const nameH = document.querySelector('.banner-name').scrollHeight;
   const labelH = document.querySelector('.banner-label').offsetHeight;
   const cdH = document.querySelector('.banner-cd').offsetHeight;
-  // .banner 上下 padding 8+8，.panel 上下 padding 8+8，标签/倒计时/任务名之间留 6px 间隙
-  const need = Math.ceil(nameH + labelH + cdH + 6 + 32);
+  // .banner 上下 padding 8+8，.panel 上下 padding 8+8，行间隙 6，再留 8px 安全余量
+  const need = Math.ceil(nameH + labelH + cdH + 6 + 32 + 8);
   window.api.setBannerHeight(Math.max(BANNER_MIN_H, need))
     .catch(err => console.error('[setBannerHeight] 调用失败:', err));
 }
