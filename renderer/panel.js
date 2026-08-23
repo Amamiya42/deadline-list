@@ -255,10 +255,15 @@ function updateBanner() {
     $('bannerName').textContent = t.name;
     $('bannerCd').textContent = fmtRemaining(rem) + exclamations(rem) + ' · ' + fmtDeadline(t.deadline);
   }
-  // 高度自适应：任务名可能折行多行，量实际内容高度后让主进程调整窗口（下限 BANNER_MIN_H）
-  const textH = document.querySelector('.banner-text').getBoundingClientRect().height;
-  // .banner 上下 padding 8+8，.panel 上下 padding 8+8
-  window.api.setBannerHeight(Math.ceil(textH) + 32)
+  // 高度自适应：任务名可能折行多行。
+  // 注意：不能用 .banner-text 的 getBoundingClientRect()，它会被当前窗口的 overflow 裁剪，
+  // 形成“窗口越矮→测得越矮→窗口越矮”的死循环；scrollHeight 才反映真实内容高度。
+  const nameH = document.querySelector('.banner-name').scrollHeight;
+  const labelH = document.querySelector('.banner-label').offsetHeight;
+  const cdH = document.querySelector('.banner-cd').offsetHeight;
+  // .banner 上下 padding 8+8，.panel 上下 padding 8+8，标签/倒计时/任务名之间留 6px 间隙
+  const need = Math.ceil(nameH + labelH + cdH + 6 + 32);
+  window.api.setBannerHeight(Math.max(BANNER_MIN_H, need))
     .catch(err => console.error('[setBannerHeight] 调用失败:', err));
 }
 
