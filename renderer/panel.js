@@ -128,19 +128,19 @@ function startEdit(t) {
 // ---------- 渲染 ----------
 
 function render() {
-  const undone = data.tasks.filter(t => !t.done).sort((a, b) => a.deadline - b.deadline);
+  const undoneRoots = data.tasks.filter(t => !t.done && t.parentId === null).sort((a, b) => a.deadline - b.deadline);
   const done = data.tasks.filter(t => t.done).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
 
   const list = $('taskList');
   list.innerHTML = '';
-  if (undone.length === 0) {
+  if (undoneRoots.length === 0 && data.tasks.filter(t => !t.done).length === 0) {
     const div = document.createElement('div');
     div.className = 'empty';
     div.textContent = '🎉 没有待办任务\n点上方添加一个吧';
     div.style.whiteSpace = 'pre-line';
     list.appendChild(div);
   } else {
-    for (const t of undone) list.appendChild(taskCard(t));
+    for (const t of undoneRoots) appendTaskTree(list, t, 0);
   }
 
   const sec = $('doneSection');
@@ -153,10 +153,29 @@ function render() {
   tick();
 }
 
-function taskCard(t) {
+function appendTaskTree(container, t, depth) {
+  container.appendChild(taskCard(t, depth));
+  if (!t.expanded) return;
+  const children = getChildren(data.tasks, t.id).filter(c => !c.done).sort((a, b) => a.deadline - b.deadline);
+  for (const c of children) appendTaskTree(container, c, depth + 1);
+}
+
+function taskCard(t, depth = 0) {
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.id = t.id;
+  card.style.marginLeft = (depth * 18) + 'px';
+
+  // 展开/折叠按钮（仅非叶子节点）
+  const children = getChildren(data.tasks, t.id).filter(c => !c.done);
+  if (children.length > 0) {
+    const expand = document.createElement('button');
+    expand.className = 'icon-btn tree-toggle';
+    expand.textContent = t.expanded ? '▼' : '▶';
+    expand.title = t.expanded ? '折叠子任务' : '展开子任务';
+    expand.addEventListener('click', () => window.api.toggleExpanded(t.id));
+    card.appendChild(expand);
+  }
 
   const check = document.createElement('input');
   check.type = 'checkbox';

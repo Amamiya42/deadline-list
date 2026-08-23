@@ -183,6 +183,14 @@ body.collapsed .panel { height: 100vh; }
   transition: background-color 0.6s linear;
 }
 
+.tree-toggle {
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  padding: 0;
+}
+
 .card.flash { animation: flashBorder 1.6s ease-in-out infinite; }
 
 @keyframes flashBorder {
