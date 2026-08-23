@@ -258,7 +258,8 @@ function updateBanner() {
   // 高度自适应：任务名可能折行多行，量实际内容高度后让主进程调整窗口（下限 BANNER_MIN_H）
   const textH = document.querySelector('.banner-text').getBoundingClientRect().height;
   // .banner 上下 padding 8+8，.panel 上下 padding 8+8
-  window.api.setBannerHeight(Math.ceil(textH) + 32);
+  window.api.setBannerHeight(Math.ceil(textH) + 32)
+    .catch(err => console.error('[setBannerHeight] 调用失败:', err));
 }
 
 // ---------- 撤销 ----------
