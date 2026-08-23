@@ -3,7 +3,6 @@
 const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, nativeImage, screen, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
 
 const PANEL_W = 340;
 const PANEL_H = 560;
@@ -31,31 +30,45 @@ function logNotify(msg) {
 }
 
 // ---------- 提示音（自管理） ----------
-// Electron 的 Windows Toast 即使 silent:false 也经常不发声（已知缺陷，与输出设备无关），
-// 所以通知声音完全由我们自己播：用系统 SoundPlayer 播放内置 wav。
-// 它走「当前默认输出设备」——插 USB 耳机自动跟过去，拔掉自动回扬声器，无需任何配置。
+// Electron 的 Windows Toast 即使 silent:false 也经常不发声；外挂进程播放（SoundPlayer）
+// 又受「音量合成器把该应用静音」「默认输出设备不在线」等影响，且难以观测。
+// 最终方案：在应用自己的窗口里用 WebAudio 合成双音提示——
+// 走 Chromium 音频栈 → 系统当前默认输出设备（插耳机自动跟随），无外部依赖、可写日志。
 
-let notifySoundFile = null;
-
-function pickNotifySound() {
-  const mediaDir = path.join(process.env.SystemRoot || 'C:\\Windows', 'Media');
-  const candidates = ['Windows Notify System Generic.wav', 'Windows Notify.wav', 'notify.wav'];
-  for (const name of candidates) {
-    const p = path.join(mediaDir, name);
-    if (fs.existsSync(p)) { notifySoundFile = p; return; }
+const BEEP_SCRIPT = `
+(async () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = ctx.currentTime + 0.05;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02);
+    gain.gain.setValueAtTime(0.4, t0 + 0.36);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.46);
+    gain.connect(ctx.destination);
+    [[880, 0.00, 0.20], [1174.7, 0.18, 0.28]].forEach(([freq, dt, dur]) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(t0 + dt);
+      osc.stop(t0 + dt + dur);
+    });
+    return 'beep-ok';
+  } catch (e) {
+    return 'beep-error: ' + (e && e.message);
   }
-}
+})()`;
 
 function playNotifySound() {
-  if (!notifySoundFile) return;
-  try {
-    const arg = '(New-Object Media.SoundPlayer \'' + notifySoundFile.replace(/'/g, "''") + '\').PlaySync()';
-    const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', arg], {
-      windowsHide: true,
-      stdio: 'ignore'
-    });
-    child.on('error', () => {}); // 播放失败不影响通知本身
-  } catch (e) { /* 同上 */ }
+  const targets = [];
+  if (panelWin && !panelWin.isDestroyed()) targets.push(panelWin);
+  for (const [, w] of noteWins) if (!w.isDestroyed()) targets.push(w);
+  const win = targets[0];
+  if (!win) { logNotify('[提示音] 失败：当前没有任何可用窗口'); return; }
+  win.webContents.executeJavaScript(BEEP_SCRIPT, true)
+    .then(r => logNotify('[提示音] ' + r))
+    .catch(e => logNotify('[提示音] 执行异常：' + (e && e.message)));
 }
 
 // ---------- 通知快捷方式（关键修复） ----------
@@ -575,7 +588,6 @@ if (!gotLock) {
 
     // 通知链路修复：补建带 AUMID 的开始菜单快捷方式（Windows 显示 Toast 的硬性前提）
     ensureNotificationShortcut();
-    pickNotifySound();
 
     // 首次运行加一条演示任务，让紧迫感配色立刻可见
     if (!data.settings.demoAdded && data.tasks.length === 0) {
