@@ -19,6 +19,9 @@ app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('no-sandbox');
+// 本机现象：WebAudio 报 running 但系统混音器里从未出现本应用的音频会话（彻底无声）。
+// 疑似独立音频服务进程(AudioServiceOutOfProcess)在本机环境异常，禁用它让音频回主进程内渲染。
+app.commandLine.appendSwitch('disable-features', 'AudioServiceOutOfProcess');
 
 const dataFile = path.join(app.getPath('userData'), 'data.json');
 const notifyLog = path.join(app.getPath('userData'), 'notify.log');
@@ -377,6 +380,18 @@ function sendTestNotification() {
   showBalloon('✅ deadline清单：测试通知', '看到这条并听到提示音，说明通知链路正常。');
 }
 
+// 诊断用：Explorer 负责渲染的托盘气泡，声音由系统播放（不经过 Chromium 音频栈）。
+// 若这条能响而 WebAudio 不响，说明断点确在 Chromium 音频服务一侧。
+function sendTestBalloonWithSound() {
+  if (!tray || tray.isDestroyed()) return;
+  try {
+    tray.displayBalloon({ title: '🔔 气泡声音测试', content: '这条应带系统默认提示音。' });
+    logNotify('[气泡] 已发送（未禁声）');
+  } catch (e) {
+    logNotify('[气泡] 发送失败：' + (e && e.message));
+  }
+}
+
 function checkReminders() {
   if (!data) return;
   const now = Date.now();
@@ -443,6 +458,7 @@ function buildTrayMenu() {
   const menu = Menu.buildFromTemplate([
     { label: '显示主面板', click: () => { if (panelWin) { panelWin.show(); panelWin.focus(); } } },
     { label: '发送测试通知', click: () => sendTestNotification() },
+    { label: '测试气泡(含系统音)', click: () => sendTestBalloonWithSound() },
     { label: '专注模式：隐藏全部悬浮窗 (Ctrl+Alt+H)', type: 'checkbox', checked: !!data.settings.focusMode, click: item => {
       data.settings.focusMode = item.checked;
       saveData();
