@@ -12,11 +12,11 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            cmd: npx electron-builder --win --x64 --ia32 --arm64
+            cmd: npx electron-builder --win --x64 --ia32 --arm64 --publish never
           - os: macos-latest
-            cmd: npx electron-builder --mac --x64 --arm64
+            cmd: npx electron-builder --mac --x64 --arm64 --publish never
           - os: ubuntu-latest
-            cmd: npx electron-builder --linux --x64 --arm64
+            cmd: npx electron-builder --linux --x64 --arm64 --publish never
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
