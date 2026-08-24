@@ -47,15 +47,10 @@ A lightweight desktop deadline tracker: an always-on-top countdown banner plus s
 
 ## 使用简介 / Quick Start
 
-1. 在"添加任务"区填写任务名、截止时间和备注，点击**添加任务**
-2. 桌面上会出现置顶横幅，实时倒计时最紧急的任务
-3. **右键**任务卡片：编辑、添加子任务、撕成悬浮便签、完成、删除
-4. 点击便签可将其拖到屏幕任意位置；托盘图标菜单可切换专注模式
-
-1. Fill in the task name, deadline, and notes in the "Add Task" area, then click the add button
-2. An always-on-top banner appears on your desktop, counting down to the most urgent task
-3. **Right-click** a task card to edit, add subtasks, tear it off as a sticky note, complete, or delete
-4. Drag sticky notes anywhere; use the tray icon menu to toggle focus mode
+1. 在"添加任务"区填写任务名、截止时间和备注，点击**添加任务** / Fill in the task name, deadline, and notes in the "Add Task" area, then click the add button
+2. 桌面上会出现置顶横幅，实时倒计时最紧急的任务 / An always-on-top banner appears on your desktop, counting down to the most urgent task
+3. **右键**任务卡片：编辑、添加子任务、撕成悬浮便签、完成、删除 / **Right-click** a task card to edit, add subtasks, tear it off as a sticky note, complete, or delete
+4. 点击便签可将其拖到屏幕任意位置；托盘图标菜单可切换专注模式 / Drag sticky notes anywhere; use the tray icon menu to toggle focus mode
 
 ## 从源码运行 / Run from Source
 
