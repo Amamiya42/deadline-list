@@ -1,5 +1,12 @@
 'use strict';
 
+window.onerror = function (msg, url, line, col, err) {
+  console.error('[global-error]', msg, 'line=', line, 'col=', col, 'stack=', err && err.stack);
+};
+window.addEventListener('unhandledrejection', e => {
+  console.error('[unhandled-rejection]', e.reason && e.reason.stack ? e.reason.stack : e.reason);
+});
+
 let data = null;
 let editId = null;
 let undoTimer = null;
@@ -278,6 +285,7 @@ function taskCard(t, depth = 0) {
 function doneCard(t) {
   const card = document.createElement('div');
   card.className = 'done-card';
+
   const name = document.createElement('span');
   name.className = 'done-name';
   name.textContent = t.name;

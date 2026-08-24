@@ -11,7 +11,7 @@ const NOTE_W = 250;
 const NOTE_H = 190;
 const RETENTION_MS = 30 * 24 * 3600 * 1000; // 已完成任务保留 30 天
 
-app.setAppUserModelId('com.yifan.deadlinelist');
+app.setAppUserModelId('deadline清单');
 
 // 兼容性：部分 Windows 显卡驱动下 GPU 进程会反复崩溃导致窗口无法渲染，
 // 这里强制关闭 GPU 加速（悬浮便签和清单面板用纯 CSS + 软件光栅完全够用）
@@ -94,20 +94,21 @@ function ensureNotificationShortcut() {
   try {
     const startMenu = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs');
     const lnk = path.join(startMenu, 'deadline清单.lnk');
-    // 已存在且指向同一 electron.exe 就不再重写（避免每次启动都刷新）
+    const aumid = 'deadline清单';
+    // 已存在、指向同一 electron.exe 且 AUMID 一致就不再重写
     let need = true;
     try {
       const cur = shell.readShortcutLink(lnk);
-      if (cur && cur.target === process.execPath) need = false;
+      if (cur && cur.target === process.execPath && cur.appUserModelId === aumid) need = false;
     } catch (e) { /* 不存在或读取失败 → 需要创建 */ }
     if (need) {
       shell.writeShortcutLink(lnk, 'replace', {
         target: process.execPath,
         args: '"' + __dirname + '"',
-        appUserModelId: 'com.yifan.deadlinelist',
+        appUserModelId: aumid,
         description: 'deadline清单 桌面提醒'
       });
-      logNotify('已创建开始菜单快捷方式（AUMID=com.yifan.deadlinelist）→ ' + lnk);
+      logNotify('已创建开始菜单快捷方式（AUMID=' + aumid + '）→ ' + lnk);
     }
   } catch (e) {
     logNotify('快捷方式创建失败: ' + (e && e.message));

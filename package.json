@@ -4,10 +4,54 @@
   "version": "1.0.2",
   "description": "桌面悬浮 Deadline 清单：便签悬浮 + To Do 任务管理",
   "main": "main.js",
+  "author": "Yifan",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.yifan.deadlinelist",
+    "productName": "deadline清单",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64", "ia32", "arm64"] },
+        { "target": "zip", "arch": ["x64", "ia32", "arm64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "deadline清单-Setup-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "target": [
+        { "target": "AppImage", "arch": ["x64", "arm64"] }
+      ],
+      "artifactName": "deadline清单-${version}-${arch}.${ext}"
+    }
   },
   "devDependencies": {
-    "electron": "^33.2.0"
+    "electron": "^33.2.0",
+    "electron-builder": "^26.15.3"
   }
 }
