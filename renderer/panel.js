@@ -60,6 +60,7 @@ function bindEvents() {
   $('btnCancel').addEventListener('click', resetForm);
   $('inpName').addEventListener('keydown', e => { if (e.key === 'Enter') submitTask(); });
   $('inpName').addEventListener('input', updateNameCounter);
+  $('inpNotes').addEventListener('input', updateNotesCounter);
 
   $('doneToggle').addEventListener('click', () => {
     const sec = $('doneSection');
@@ -108,13 +109,21 @@ function resetForm() {
   $('btnSubmit').textContent = '添加任务';
   $('btnCancel').style.display = 'none';
   updateNameCounter();
+  updateNotesCounter();
+}
+
+function updateCounter(inputEl, counterEl, max) {
+  const remaining = max - inputEl.value.length;
+  counterEl.textContent = remaining + '/' + max;
+  counterEl.classList.toggle('limit', remaining <= 0);
 }
 
 function updateNameCounter() {
-  const len = $('inpName').value.length;
-  const remaining = 500 - len;
-  $('nameCounter').textContent = '剩余 ' + remaining + ' 字';
-  $('nameCounter').classList.toggle('limit', remaining <= 0);
+  updateCounter($('inpName'), $('nameCounter'), 500);
+}
+
+function updateNotesCounter() {
+  updateCounter($('inpNotes'), $('notesCounter'), 120);
 }
 
 async function submitTask() {
@@ -134,6 +143,8 @@ async function submitTask() {
     if (r && r.ok) {
       $('inpName').value = '';
       $('inpNotes').value = '';
+      updateNameCounter();
+      updateNotesCounter();
     }
   }
 }
@@ -143,6 +154,7 @@ function startEdit(t) {
   $('inpName').value = t.name;
   $('inpNotes').value = t.notes || '';
   updateNameCounter();
+  updateNotesCounter();
   const d = new Date(t.deadline);
   const p = n => String(n).padStart(2, '0');
   $('inpDeadline').value = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
