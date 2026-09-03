@@ -120,6 +120,7 @@ let panelWin = null;
 let tray = null;
 let trayIcon = null;
 let quitting = false;
+let launchedAtLogin = false; // 本次是否为开机自启启动（wasOpenedAtLogin）
 const noteWins = new Map(); // taskId -> BrowserWindow
 
 // ---------- 数据 ----------
@@ -146,7 +147,7 @@ function loadData() {
   if (!d || typeof d !== 'object') d = {};
   if (!Array.isArray(d.tasks)) d.tasks = [];
   d.settings = Object.assign(
-    { panelX: null, panelY: null, collapsed: false, autoLaunch: true, demoAdded: false, focusMode: false },
+    { panelX: null, panelY: null, collapsed: false, autoLaunch: true, demoAdded: false, focusMode: false, startHidden: false },
     d.settings || {}
   );
   // 清理超过保留期的已完成任务
@@ -209,9 +210,12 @@ function createPanel() {
   });
   panelWin.setAlwaysOnTop(true, 'screen-saver');
   panelWin.loadFile(path.join(__dirname, 'renderer', 'panel.html'));
-  // 专注模式下启动时不显示面板
+  // 专注模式，或「开机启动时隐藏面板」开启且本次确为开机自启时，启动不弹面板
+  //（手动双击启动不受影响，随时可点托盘图标呼出）
   panelWin.once('ready-to-show', () => {
-    if (!data.settings.focusMode) panelWin.show();
+    if (data.settings.focusMode) return;
+    if (data.settings.startHidden && launchedAtLogin) return;
+    panelWin.show();
   });
   panelWin.on('moved', savePanelPos);
   panelWin.on('close', e => {
@@ -422,7 +426,14 @@ function checkReminders() {
 
 function applyAutoLaunch() {
   try {
-    app.setLoginItemSettings({ openAtLogin: !!data.settings.autoLaunch });
+    const opts = { openAtLogin: !!data.settings.autoLaunch };
+    if (!app.isPackaged) {
+      // 开发模式下必须显式带上应用目录参数，否则注册表只登记裸 electron.exe，
+      // 开机后会弹出 Electron 默认窗口（2026-09-03 实际踩过这个坑）
+      opts.path = process.execPath;
+      opts.args = ['"' + path.resolve(__dirname) + '"'];
+    }
+    app.setLoginItemSettings(opts);
   } catch (e) {
     console.error('设置开机自启失败:', e);
   }
@@ -474,6 +485,10 @@ function buildTrayMenu() {
     { label: '开机自启', type: 'checkbox', checked: !!data.settings.autoLaunch, click: item => {
       data.settings.autoLaunch = item.checked;
       applyAutoLaunch();
+      saveData();
+    } },
+    { label: '开机启动时隐藏面板', type: 'checkbox', checked: !!data.settings.startHidden, click: item => {
+      data.settings.startHidden = item.checked;
       saveData();
     } },
     { type: 'separator' },
@@ -748,6 +763,8 @@ if (!gotLock) {
     }
 
     applyAutoLaunch();
+    // 记录本次是否为开机自启启动（供「开机启动时隐藏面板」判断）
+    try { launchedAtLogin = !!app.getLoginItemSettings().wasOpenedAtLogin; } catch (e) { /* 读取失败按手动启动处理 */ }
     createPanel();
     for (const t of data.tasks) {
       if (!t.done && t.note && t.note.detached) createNoteWin(t);
